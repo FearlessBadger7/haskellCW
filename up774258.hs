@@ -310,15 +310,16 @@ option5 films name = do
 
 option6 :: [Film] -> String -> IO ()
 option6 films name = do
-  putStrLn "Whitch film are you a fan of? "
+  putStrLn "Which film are you a fan of? "
   flm <- getLine
-  if (filmExits flm)
+  if (filmExits films flm )
     then do
-      films = addFanToFilm films flm name
+      let newFilms = addFanToFilm films flm name
+      showMenu newFilms name
     else do
       putStrLn "Sorry this film doesn't exist."
-  showMenu films name
-  --do you want to add it?
+      showMenu films name
+  --do you want to add it? for all do want to go back to main menu type in 123 back
 
 option7 :: [Film] -> String -> IO ()
 option7 films name = do
