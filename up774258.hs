@@ -155,6 +155,12 @@ lol (x:xs)
 directLikes :: [Film] -> String -> String
 directLikes films fan = lol (freq (directorsByFan films fan))
 
+filmExits :: [Film] -> String -> Bool
+filmExits (x:xs) title
+    | xs == []          = sameFilm x title --last item in list
+    | sameFilm x title  = True
+    | otherwise         = filmExits xs title
+
 
 
 -- Demo function to test basic functionality (without persistence - i.e.
@@ -176,34 +182,151 @@ demo 8  = putStrLn (directLikes testDatabase "Liz")
 
 main :: IO ()
 main = do
-    name <- getName
-    db <- readFilmFile
-    showMenu db name
-    return ()
+  db <- readFilm
+  putStr (filmsAsString db True)
+  putStrLn "\n"
+  name <- getName
+  showMenu db name
+  return ()
 
 getName :: IO String
 getName = do
-    putStrLn "Please enter your name:"
-    respone <- getLine
-    return respone
+  putStr "Please enter your name: "
+  respone <- getLine
+  return respone
 
+readFilm :: IO [Film]
+readFilm = do
+  file <- readFile "films.txt"
+  return (read file :: [Film])
 
-readFilmFile :: IO [Film]
-readFilmFile = do
-    file <- readFile "films.txt"
-    return (read file :: [Film])
+writeToFilms :: [Film] -> IO ()
+writeToFilms films = do
+  putStrLn "Saving..."
+  writeFile "films.txt" ""
+  writeFile "films.txt" (show films)
+  putStrLn "Done"
+  return ()
 
 showMenu :: [Film] -> String -> IO ()
 showMenu films name = do
-  putStrLn "\n"
-  putStrLn ("Hello "++ name ++ ". Enter an option number.")
+  putStrLn ""
+  putStrLn ("Hello "++ name ++ ", enter an option number.")
   putStrLn "==========================================="
   putStrLn "1. Show all films"
-  putStrLn "9. Exit\n"
-  putStr (filmsAsString films True)
+  putStrLn "2. Add a film to the database"
+  putStrLn "3. Show all the films, after a chosen year"
+  putStrLn "4. Show all the films I'm a fan of"
+  putStrLn "5. Show all the fans of a chosen film"
+  putStrLn "6. Add me as a fan, to a chosen film"
+  putStrLn "7. Show all the fans of a chosen director"
+  putStrLn "8. Show all directors I'm a fan of"
+  putStrLn "9. Exit"
+  putStrLn ""
+  putStr "I choose you, option number "
+
+  respone <- getLine
+  case respone of
+    "1" -> option1 films name
+    "2" -> option2 films name
+    "3" -> option3 films name
+    "4" -> option4 films name
+    "5" -> option5 films name
+    "6" -> option6 films name
+    "7" -> option7 films name
+    "8" -> option8 films name
+    "9" -> do
+      writeToFilms films
+      return ()
+    _ -> do
+      putStrLn ("Invalid input")
+      showMenu films name
 
 
+option1 :: [Film] -> String -> IO ()
+option1 films name = do
+  putStrLn "Do you want to see the names of the fans? (y/n)"
+  yesNo <- getLine
+  case yesNo of
+    "y" -> do
+      putStrLn (filmsAsString films True)
+    "n" -> do
+      putStrLn (filmsAsString films False)
+    _ -> do
+      putStrLn ("Invalid input")
+      option1 films name
+  showMenu films name
 
+option2 :: [Film] -> String -> IO ()
+option2 films name = do
+  putStr "Title: "
+  t <- getLine
+  putStr "Director: "
+  d <- getLine
+  putStr "Year: "
+  y <- getLine
+  if (isInteger y)
+    then do
+      let yr = read y :: Int
+      let newFilms = addFilm films t d yr []
+      showMenu newFilms name
+    else do
+      putStrLn "Invalid input for year"
+      option2 films name
+
+isInteger s = case reads s :: [(Integer, String)] of
+  [(_, "")] -> True
+  _         -> False
+
+option3 :: [Film] -> String -> IO ()
+option3 films name = do
+  putStr "Show films after the year: "
+  y <- getLine
+  if (isInteger y)
+    then do
+      let yr = read y :: Int
+      putStrLn (filmsAsString (findFilmsAfterYear films yr) False)
+      showMenu films name
+    else do
+      putStrLn "Invalid input for year"
+      option3 films name
+
+option4 :: [Film] -> String -> IO ()
+option4 films name = do
+  putStrLn (filmsAsString (findFilmsByFanName films name) False)
+  showMenu films name
+
+option5 :: [Film] -> String -> IO ()
+option5 films name = do
+  putStr "Film title: "
+  t <- getLine
+  let fans = fansToString (getFansOfFilm films t)
+  if (fans == "")
+    then do
+      putStrLn "This film either doesn't here or has no fans."
+    else do
+      putStrLn fans
+  showMenu films name
+
+option6 :: [Film] -> String -> IO ()
+option6 films name = do
+  putStrLn "Whitch film are you a fan of? "
+  flm <- getLine
+  if (filmExits flm)
+    then do
+      films = addFanToFilm films flm name
+    else do
+      putStrLn "Sorry this film doesn't exist."
+  showMenu films name
+  --do you want to add it?
+
+option7 :: [Film] -> String -> IO ()
+option7 films name = do
+  return ()
+
+option8 :: [Film] -> String -> IO ()
+option8 films name = do
+  return ()
 
 
 -- getdata file
