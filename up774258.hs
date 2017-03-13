@@ -4,7 +4,7 @@
 
 import Data.List
 
-                -- title director year fans
+-- title director year fans
 data Film = Film String String Int [String]
     deriving (Read, Eq, Show)
 
@@ -35,69 +35,88 @@ testDatabase = [Film "Blade Runner" "Ridley Scott" 1982 ["Zoe", "Heidi", "Jo", "
   , Film "Star Wars: The Force Awakens" "J J Abrams" 2015 ["Emma", "Wally", "Zoe", "Kate", "Bill", "Dave", "Liz", "Jo"]
   , Film "Hugo" "Martin Scorsese" 2011 ["Wally", "Sam"]]
 
+----------------------------------------------------------------------------------------------------
 -- Functional code
+
+-- adds new film to the list returns the new film
 addFilm :: [Film] -> String -> String -> Int -> [String] -> [Film]
 addFilm database t d y f = database ++ [(Film t d y f)]
 
-filmsAsString :: [Film] -> Bool -> String -- true to show fan names false to show number of fans
+-- converts a list of films to a String
+-- True to show fan names, False to show number of fans
+filmsAsString :: [Film] -> Bool -> String
+filmsAsString [] _ = "Sorry there are no results for that."
 filmsAsString [x] True = filmToStringFans x ++ "\n"
 filmsAsString (x:xs) True = (filmToStringFans x) ++ "\n\n" ++ (filmsAsString xs True)
 filmsAsString [x] _ = filmToString x ++ "\n"
 filmsAsString (x:xs) _ = (filmToString x) ++ "\n\n" ++ (filmsAsString xs False)
 
-filmToString :: Film -> String -- fan list on newline so easier to read
-filmToString (Film t d y f) = t ++ " " ++ d ++ " " ++ (show y) ++ " "++ show (length f)
+-- converts a Film to a string showing th number of fans
+filmToString :: Film -> String -- fan num on newline so easier to read
+filmToString (Film t d y f) = t ++ " " ++ d ++ " " ++ (show y) ++ "\nNumber of Fans: "++ show (length f)
 
+-- converts a Film to a String showing a list of fans
 filmToStringFans :: Film -> String -- fan list on newline so easier to read
 filmToStringFans (Film t d y f) = t ++ " -- " ++ d ++ ", " ++ (show y) ++ "\n" ++ fansToString f
 
+-- converts a list of strings to a string
 fansToString :: [String] -> String
-fansToString []  = []
+fansToString []  = "Sorry there are no results for that."
 fansToString [x] = x -- not needed but removes , from end of list
 fansToString (x:xs) =  x ++ ", " ++ (fansToString xs)
 
+-- returns all the films after but not including a particular year
 findFilmsAfterYear :: [Film] -> Int -> [Film]
 findFilmsAfterYear (x:xs) year = [ x | x <- xs, (afterDateTest x year) ]
 
+-- returns if a film is after a particular year
 afterDateTest :: Film -> Int -> Bool
 afterDateTest (Film t d y f) year
     | y > year      = True
     | otherwise     = False
 
+-- returns list of films who have a particular fan in their fan list
 findFilmsByFanName :: [Film] -> String -> [Film]
 findFilmsByFanName (x:xs) name = [ x | x <- xs, (areTheyAFan x name)]
 
+-- returns if a person is a fan of a film or not
 areTheyAFan :: Film -> String -> Bool
 areTheyAFan (Film t d y f) name
     | elem name f   = True
     | otherwise     = False
 
+-- returns all the fans of a particular film
 getFansOfFilm :: [Film] -> String -> [String]
 getFansOfFilm films title = fans
     where
       film = findFilm films title
       fans = getFans film
 
+-- returns the searched for film title as its id tag
 findFilm :: [Film] -> String -> Film
 findFilm (x:xs) title
     | sameFilm x title  = x
     | xs == []          = Film "" "" 0 []
     | otherwise         = findFilm xs title
 
+-- returns if a film matches the given title or not
 sameFilm :: Film -> String -> Bool
 sameFilm (Film t d y f) title
     | t == title    = True
     | otherwise     = False
 
+-- returns a list of fans for a film
 getFans :: Film -> [String]
 getFans (Film t d y f) = f
 
+-- adds a fan to a film returns new list of films
 addFanToFilm :: [Film] -> String -> String -> [Film]
 addFanToFilm (x:xs) title fan =
   map (\x -> if (sameFilm x title) then (addFans film fan) else x) xs
     where
       film = findFilm (x:xs) title
 
+-- adds a fan to a film returns new list of films
 addFans :: Film -> String -> Film
 addFans (Film t d y f) fan
     | elem fan f    = Film t d y f --if already a fan, fan list is unaltered
@@ -105,63 +124,80 @@ addFans (Film t d y f) fan
     where
       fans = f ++ [fan]
 
+-- returns all the fans of a particular director
 fansOfDirector :: [Film] -> String -> [String]
-fansOfDirector films direct = nub (allFans directorsFilms)
+fansOfDirector films direct
+    | films == []  = []
+    | otherwise    = nub (allFans directorsFilms)
   where
     directorsFilms = getFilmsbyDirector films direct
 
+-- returns list of films by a particular director
 getFilmsbyDirector :: [Film] -> String -> [Film]
 getFilmsbyDirector (x:xs) direct = [ x | x <- xs, (sameDirector x direct)]
 
+-- returns if a film has the same director as the provided director
 sameDirector :: Film -> String -> Bool
 sameDirector (Film t d y f) direct
     | d == direct    = True
     | otherwise     = False
 
+-- returns all the fans within a list of films (including repeats)
 allFans :: [Film] -> [String]
-allFans (x:xs)
-    | xs == []    = getFans x
-    | otherwise   = (getFans x) ++ (allFans xs )
-  where
-    (Film t d y f) = x
+allFans []     = []
+allFans [x] = getFans x
+allFans (x:xs) = getFans x ++ (allFans xs)
 
+-- returns a list of all the directors who have a particular fan (including repeats)
 directorsByFan :: [Film] -> String -> [String] --list of directors with repeats
 directorsByFan (x:xs) fan = allDirectors [ x | x <- xs, (areTheyAFan x fan)]
 
+-- returns a list of all the directors (including repeats)
 allDirectors :: [Film] -> [String]
+allDirectors []     = []
 allDirectors (x:xs)
-    | xs == []    = [d]
-    | otherwise   = d : (allDirectors xs )
+    | (x:xs) == [x] = [d]
+    | otherwise = [d] ++ (allDirectors xs)
   where
     (Film t d y f) = x
 
+-- counts the number of times a particular item appears in a list
 count :: Eq a => a -> [a] -> Int
 count n [] = 0
 count n (x:xs)
     | n == x = 1 + count n xs
     | otherwise = count n xs
 
+-- counts the number of times all item appears in a list
 freq :: Eq a => [a] -> [(a, Int)]
 freq [] = []
 freq (x:xs) = [(x, count x (x:xs))] ++ freq (filter (/= x) xs)
 
-lol :: [(String, Int)] -> String
-lol (x:xs)
-    | xs == []   = d ++ " " ++ (show c)
-    | otherwise  = d ++ " " ++ (show c) ++ "\n" ++ lol xs
+-- displays the list of tupes string, int as a string
+displyFavDirects :: [(String, Int)] -> String
+displyFavDirects []  = "Sorry there are no results for that."
+displyFavDirects (x:xs)
+    | xs == []   = "You like " ++ (show c) ++ " films by " ++ d
+    | otherwise  = "You like " ++ (show c) ++ " films by " ++ d ++ "\n" ++ displyFavDirects xs
   where
     (d,c) = x
 
+-- displays all the directors that a particular fan likes
+-- and the number of films of theirs they like
 directLikes :: [Film] -> String -> String
-directLikes films fan = lol (freq (directorsByFan films fan))
+directLikes films fan = displyFavDirects (freq (directorsByFan films fan))
 
+-- returns if a film appears in list of films or not
 filmExits :: [Film] -> String -> Bool
 filmExits (x:xs) title
     | xs == []          = sameFilm x title --last item in list
     | sameFilm x title  = True
     | otherwise         = filmExits xs title
 
-
+-- returns if a a value is an Int or not
+isInteger s = case reads s :: [(Integer, String)] of
+  [(_, "")] -> True
+  _         -> False
 
 -- Demo function to test basic functionality (without persistence - i.e.
 -- testDatabase doesn't change and nothing is saved/loaded to/from file).
@@ -177,7 +213,7 @@ demo 66 = putStrLn (filmsAsString (addFanToFilm testDatabase "Avatar" "Liz") Tru
 demo 7  = putStrLn (fansToString (fansOfDirector testDatabase "James Cameron"))
 demo 8  = putStrLn (directLikes testDatabase "Liz")
 
--------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 -- User interface
 
 main :: IO ()
@@ -186,8 +222,18 @@ main = do
   putStr (filmsAsString db True)
   putStrLn "\n"
   name <- getName
+  getNameIf name
   showMenu db name
   return ()
+
+getNameIf :: String -> IO ()
+getNameIf name = do
+  if (name == "")
+    then do
+      name <- getName
+      getNameIf name
+    else do
+      return ()
 
 getName :: IO String
 getName = do
@@ -195,11 +241,13 @@ getName = do
   respone <- getLine
   return respone
 
+-- reads from file films.txt
 readFilm :: IO [Film]
 readFilm = do
   file <- readFile "films.txt"
   return (read file :: [Film])
 
+-- writes to file films.txt and exits program
 writeToFilms :: [Film] -> IO ()
 writeToFilms films = do
   putStrLn "Saving..."
@@ -208,8 +256,11 @@ writeToFilms films = do
   putStrLn "Done"
   return ()
 
+-- displays the menu to the users and gets their input option for
 showMenu :: [Film] -> String -> IO ()
 showMenu films name = do
+  putStrLn "Press enter to continue."
+  fake <- getLine -- allows users to read error msg and result before displaying menu
   putStrLn ""
   putStrLn ("Hello "++ name ++ ", enter an option number.")
   putStrLn "==========================================="
@@ -242,7 +293,7 @@ showMenu films name = do
       putStrLn ("Invalid input")
       showMenu films name
 
-
+-- shows all films
 option1 :: [Film] -> String -> IO ()
 option1 films name = do
   putStrLn "Do you want to see the names of the fans? (y/n)"
@@ -257,27 +308,60 @@ option1 films name = do
       option1 films name
   showMenu films name
 
+-- add film to the database
 option2 :: [Film] -> String -> IO ()
 option2 films name = do
+  putStrLn "To cancel type '123 back' into the year."
   putStr "Title: "
   t <- getLine
+  if (t == "")
+    then do
+      putStrLn "Invalid input"
+      option2 films name
+    else do
+      if (filmExits films t)
+        then do
+          putStrLn "This film already exists."
+          showMenu films name
+        else do
+          option2Dir films name t
+
+-- ensure director is not empty
+option2Dir :: [Film] -> String -> String -> IO ()
+option2Dir films name t = do
   putStr "Director: "
   d <- getLine
+  if (d == "")
+    then do
+      putStrLn "Invalid input"
+      option2Dir films name t
+    else do
+      option2Year films name t d
+
+-- ensures year is valid and if user wants to cancel operation
+option2Year :: [Film] -> String -> String -> String -> IO ()
+option2Year films name t d = do
   putStr "Year: "
   y <- getLine
   if (isInteger y)
     then do
       let yr = read y :: Int
-      let newFilms = addFilm films t d yr []
-      showMenu newFilms name
+      if (yr >= 1888)
+        then do
+          let newFilms = addFilm films t d yr []
+          showMenu newFilms name
+        else do
+          putStrLn "You do know the first movie was released in 1888."
+          option2Year films name t d
     else do
-      putStrLn "Invalid input for year"
-      option2 films name
+      if (y == "123 back")
+        then do
+          showMenu films name
+        else do
+          putStrLn "Invalid input"
+          option2Year films name t d
 
-isInteger s = case reads s :: [(Integer, String)] of
-  [(_, "")] -> True
-  _         -> False
-
+-- show all the films, after a chosen year
 option3 :: [Film] -> String -> IO ()
 option3 films name = do
   putStr "Show films after the year: "
@@ -291,11 +375,13 @@ option3 films name = do
       putStrLn "Invalid input for year"
       option3 films name
 
+-- show all the films I'm a fan of
 option4 :: [Film] -> String -> IO ()
 option4 films name = do
   putStrLn (filmsAsString (findFilmsByFanName films name) False)
   showMenu films name
 
+-- show all the fans of a chosen film
 option5 :: [Film] -> String -> IO ()
 option5 films name = do
   putStr "Film title: "
@@ -308,6 +394,7 @@ option5 films name = do
       putStrLn fans
   showMenu films name
 
+-- add me as a fan, to a chosen film
 option6 :: [Film] -> String -> IO ()
 option6 films name = do
   putStrLn "Which film are you a fan of? "
@@ -318,26 +405,34 @@ option6 films name = do
       showMenu newFilms name
     else do
       putStrLn "Sorry this film doesn't exist."
-      showMenu films name
-  --do you want to add it? for all do want to go back to main menu type in 123 back
+      option6YesNo films name
 
+option6YesNo :: [Film] -> String -> IO ()
+option6YesNo films name = do
+      putStrLn "Would you like to add this film? (y/n)"
+      yesNo <- getLine
+      case yesNo of
+        "y" -> do
+          putStrLn "Ok lets add it now."
+          option2 films name
+        "n" -> do
+          putStrLn "Maybe later then."
+          showMenu films name
+        _ -> do
+          putStrLn ("Invalid input")
+          option6YesNo films name
+
+
+-- show all the fans of a chosen director
 option7 :: [Film] -> String -> IO ()
 option7 films name = do
-  return ()
+  putStr "Director name: "
+  direct <- getLine
+  putStrLn (fansToString (fansOfDirector films direct))
+  showMenu films name
 
+-- show all directors I'm a fan of
 option8 :: [Film] -> String -> IO ()
 option8 films name = do
-  return ()
-
-
--- getdata file
--- showall films
--- ask user'sname
--- show menu
--- allow users to modify variable
--- exit
--- save file
---
--- Your user interface code goes here
---
---
+  putStrLn (directLikes films name)
+  showMenu films name
